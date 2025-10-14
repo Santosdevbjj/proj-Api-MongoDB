@@ -1,0 +1,76 @@
+name: .NET Build, Test & Publish
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 📦 Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: 📥 Restore dependencies
+        run: dotnet restore ./src/projApiMongoDB.Api/projApiMongoDB.Api.csproj
+
+      - name: 🏗️ Build project
+        run: dotnet build ./src/projApiMongoDB.Api/projApiMongoDB.Api.csproj --configuration Release --no-restore
+
+      - name: 🧪 Run tests
+        if: always()
+        run: |
+          if [ -d "./tests" ]; then
+            dotnet test ./tests --no-build --verbosity normal
+          else
+            echo "No tests directory found, skipping tests."
+          fi
+
+  publish-docker:
+    name: Build & Publish Docker Image
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+
+    steps:
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔐 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Build and Push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./src/projApiMongoDB.Api/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
