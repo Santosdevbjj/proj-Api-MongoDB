@@ -4,18 +4,34 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>projApiMongoDB.Api</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <LangVersion>latest</LangVersion>
+    <NoWarn>1591</NoWarn> <!-- Ignora avisos de documentação XML nos controllers -->
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- MongoDB driver -->
-    <PackageReference Include="MongoDB.Driver" Version="2.21.2" />
-    <PackageReference Include="MongoDB.Bson" Version="2.21.2" />
+    <!-- Pacotes MongoDB -->
+    <PackageReference Include="MongoDB.Driver" Version="2.22.0" />
+    <PackageReference Include="MongoDB.Bson" Version="2.22.0" />
+
     <!-- Swagger / OpenAPI -->
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.0" />
-    <!-- Useful for validation (optional) -->
-    <PackageReference Include="FluentValidation.AspNetCore" Version="11.4.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.1" />
+
+    <!-- FluentValidation para validações nos DTOs -->
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+
+    <!-- Testcontainers para testes de integração com MongoDB -->
+    <PackageReference Include="DotNet.Testcontainers" Version="3.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Arquivos adicionais do projeto -->
+    <Folder Include="Properties\" />
+    <Folder Include="Controllers\" />
+    <Folder Include="Models\" />
+    <Folder Include="Services\" />
+    <Folder Include="Repositories\" />
+    <Folder Include="Validations\" />
   </ItemGroup>
 
 </Project>
