@@ -1,4 +1,4 @@
-name: CI / CD - .NET + Docker
+name: CI/CD
 
 on:
   push:
@@ -7,62 +7,55 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:24.0.0
-        options: --privileged
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore
-        run: dotnet restore ./src/projApiMongoDB.Api
-
-      - name: Build
-        run: dotnet build --no-restore -c Release
-
-      - name: Run tests
-        # If integration tests require Docker/Testcontainers ensure Docker is available
-        run: dotnet test ./src/projApiMongoDB.Tests --no-build -c Release
-
-  build-and-push-image:
-    needs: build-and-test
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-      - name: Login to Docker Registry
+      - name: Restore dependencies
+        run: dotnet restore ./src/projApiMongoDB.Api/projApiMongoDB.Api.csproj
+
+      - name: Build
+        run: dotnet build ./src/projApiMongoDB.Api/projApiMongoDB.Api.csproj --configuration Release --no-restore
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore & Test
+        run: dotnet test ./tests/projApiMongoDB.Tests/projApiMongoDB.Tests.csproj --no-build --verbosity normal
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          registry: docker.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./src/projApiMongoDB.Api/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/projapimongodb:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/projapimongodb:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/projapimongodb:latest
