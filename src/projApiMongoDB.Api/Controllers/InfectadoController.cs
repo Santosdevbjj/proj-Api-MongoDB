@@ -87,4 +87,15 @@ namespace projApiMongoDB.Api.Controllers
             return Ok(results);
         }
     }
+} 
+
+
+
+// GET api/infectado/nearby?lat=-23.56&lon=-46.65&maxKm=5&limit=20
+[HttpGet("nearby")]
+public async Task<IActionResult> Nearby([FromQuery] double lat, [FromQuery] double lon, [FromQuery] double maxKm = 10, [FromQuery] int limit = 50)
+{
+    var results = await _repo.GetByProximityAsync(lat, lon, maxKm, limit);
+    return Ok(results);
 }
+
