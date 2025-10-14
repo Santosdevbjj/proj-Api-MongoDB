@@ -1,9 +1,11 @@
 using MongoDB.Driver;
+using MongoDB.Bson; // <--- CORREÇÃO PRINCIPAL: Adicionado para BsonDocument e BsonArray
 using projApiMongoDB.Api.Models;
 using projApiMongoDB.Api.Settings;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using MongoDB.Driver.GeoJson;
 
 namespace projApiMongoDB.Api.Repositories
 {
@@ -64,30 +66,31 @@ namespace projApiMongoDB.Api.Repositories
         /// <summary>
         /// Busca por proximidade utilizando $geoNear no MongoDB (eficiente).
         /// latitude, longitude em graus.
-        /// maxDistanceMeters é em metros.
+        /// maxDistanceKm é em quilômetros.
         /// </summary>
         public async Task<IEnumerable<Infectado>> GetByProximityAsync(double latitude, double longitude, double maxDistanceKm = 10, int limit = 50)
         {
             var maxDistanceMeters = maxDistanceKm * 1000.0;
+            
+            // 1. Define o ponto de busca (o driver espera (longitude, latitude))
+            var point = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
+                new GeoJson2DGeographicCoordinates(longitude, latitude)
+            );
 
-            var geoNear = new BsonDocument
-            {
-                {
-                    "$geoNear", new BsonDocument
-                    {
-                        { "near", new BsonDocument { { "type", "Point" }, { "coordinates", new BsonArray { longitude, latitude } } } },
-                        { "distanceField", "dist.calculated" },
-                        { "spherical", true },
-                        { "maxDistance", maxDistanceMeters },
-                        { "limit", limit }
-                    }
-                }
-            };
+            // 2. Cria a Pipeline GeoNear usando a sintaxe de agregação do driver
+            var pipeline = _collection.Aggregate()
+                .GeoNear(
+                    point,
+                    distanceField: "Distancia", // Campo onde a distância será armazenada no resultado
+                    maxDistance: maxDistanceMeters,
+                    spherical: true
+                )
+                .Limit(limit); // Aplica o limite
 
-            var pipeline = new[] { geoNear };
-
-            var results = await _collection.AggregateAsync<Infectado>(pipeline);
-            return await results.ToListAsync();
+            // 3. Executa a agregação
+            var results = await pipeline.ToListAsync();
+            
+            return results;
         }
     }
-}
+} 
