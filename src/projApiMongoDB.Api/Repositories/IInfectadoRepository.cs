@@ -12,7 +12,10 @@ namespace projApiMongoDB.Api.Repositories
         Task UpdateAsync(string id, Infectado infectado);
         Task DeleteAsync(string id);
 
+         Task<Infectado?> GetByIdAsync(string id); // Adicione o '?'
+
         // Busca por proximidade — retorna infectados ordenados por distância crescente
         Task<IEnumerable<Infectado>> GetByProximityAsync(double latitude, double longitude, double maxDistanceKm = 10, int limit = 50);
     }
 }
+
