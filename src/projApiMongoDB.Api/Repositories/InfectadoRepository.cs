@@ -3,7 +3,6 @@ using projApiMongoDB.Api.Models;
 using projApiMongoDB.Api.Settings;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using System;
 
 namespace projApiMongoDB.Api.Repositories
@@ -16,14 +15,17 @@ namespace projApiMongoDB.Api.Repositories
         {
             var db = mongoClient.GetDatabase(settings.DatabaseName);
             _collection = db.GetCollection<Infectado>(settings.InfectadosCollectionName);
-            // Indexes could be created here (e.g., geospatial index)
+
+            // Garantir índices (incl. 2dsphere para consultas geoespaciais)
             EnsureIndexes();
         }
 
         private void EnsureIndexes()
         {
-            // Cria índices para latitude/longitude para consultas eficientes (2dsphere requires GeoJSON)
-            // Aqui estamos deixando como comentário: se quiser usar geo queries, armazene coords como GeoJSON.
+            // Cria index 2dsphere no campo "location" para operações geoQuery.
+            var indexKeys = Builders<Infectado>.IndexKeys.Geo2DSphere(i => i.Location);
+            var indexModel = new CreateIndexModel<Infectado>(indexKeys);
+            _collection.Indexes.CreateOne(indexModel);
         }
 
         public async Task<IEnumerable<Infectado>> GetAllAsync(int page = 1, int pageSize = 50)
@@ -35,7 +37,7 @@ namespace projApiMongoDB.Api.Repositories
                                     .ToListAsync();
         }
 
-        public async Task<Infectado> GetByIdAsync(string id)
+        public async Task<Infectado?> GetByIdAsync(string id)
         {
             var filter = Builders<Infectado>.Filter.Eq(i => i.Id, id);
             return await _collection.Find(filter).FirstOrDefaultAsync();
@@ -59,37 +61,33 @@ namespace projApiMongoDB.Api.Repositories
             await _collection.DeleteOneAsync(filter);
         }
 
+        /// <summary>
+        /// Busca por proximidade utilizando $geoNear no MongoDB (eficiente).
+        /// latitude, longitude em graus.
+        /// maxDistanceMeters é em metros.
+        /// </summary>
         public async Task<IEnumerable<Infectado>> GetByProximityAsync(double latitude, double longitude, double maxDistanceKm = 10, int limit = 50)
         {
-            // Simples implementação: busca todos e calcula distância Haversine em memória
-            // Para produção use GeoJSON + 2dsphere index e $geoNear no MongoDB.
-            var all = await _collection.Find(Builders<Infectado>.Filter.Empty).ToListAsync();
+            var maxDistanceMeters = maxDistanceKm * 1000.0;
 
-            double ToRad(double deg) => deg * Math.PI / 180.0;
-
-            double Haversine(double lat1, double lon1, double lat2, double lon2)
+            var geoNear = new BsonDocument
             {
-                var R = 6371.0; // km
-                var dLat = ToRad(lat2 - lat1);
-                var dLon = ToRad(lon2 - lon1);
-                var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                        Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) *
-                        Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-                var c = 2 * Math.Asin(Math.Min(1, Math.Sqrt(a)));
-                return R * c;
-            }
+                {
+                    "$geoNear", new BsonDocument
+                    {
+                        { "near", new BsonDocument { { "type", "Point" }, { "coordinates", new BsonArray { longitude, latitude } } } },
+                        { "distanceField", "dist.calculated" },
+                        { "spherical", true },
+                        { "maxDistance", maxDistanceMeters },
+                        { "limit", limit }
+                    }
+                }
+            };
 
-            var results = new List<(Infectado inf, double dist)>();
-            foreach (var inf in all)
-            {
-                var d = Haversine(latitude, longitude, inf.Latitude, inf.Longitude);
-                if (d <= maxDistanceKm) results.Add((inf, d));
-            }
+            var pipeline = new[] { geoNear };
 
-            results.Sort((a, b) => a.dist.CompareTo(b.dist));
-            var selected = results.Take(limit).Select(r => r.inf);
-
-            return selected;
+            var results = await _collection.AggregateAsync<Infectado>(pipeline);
+            return await results.ToListAsync();
         }
     }
 }
