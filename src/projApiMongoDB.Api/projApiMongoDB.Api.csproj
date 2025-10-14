@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MongoDB driver -->
+    <PackageReference Include="MongoDB.Driver" Version="2.21.2" />
+    <PackageReference Include="MongoDB.Bson" Version="2.21.2" />
+    <!-- Swagger / OpenAPI -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.0" />
+    <!-- Useful for validation (optional) -->
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.4.0" />
+  </ItemGroup>
+
+</Project>
