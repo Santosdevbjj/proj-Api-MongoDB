@@ -6,8 +6,11 @@ namespace projApiMongoDB.Api.Settings
     /// </summary>
     public class MongoDbSettings
     {
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
-        public string InfectadosCollectionName { get; set; }
+
+         public string ConnectionString { get; set; } = null!; // Adicione '= null!;'
+         public string DatabaseName { get; set; } = null!;
+         public string InfectadosCollectionName { get; set; } = null!;
+
+        
     }
 }
