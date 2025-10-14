@@ -1,11 +1,11 @@
 using MongoDB.Driver;
-using MongoDB.Bson; // <--- CORREÇÃO PRINCIPAL: Adicionado para BsonDocument e BsonArray
+using MongoDB.Bson;
 using projApiMongoDB.Api.Models;
 using projApiMongoDB.Api.Settings;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
-using MongoDB.Driver.GeoJson;
+// LINHA REMOVIDA: using MongoDB.Driver.GeoJson; (Causava o erro CS0234)
 
 namespace projApiMongoDB.Api.Repositories
 {
@@ -73,8 +73,9 @@ namespace projApiMongoDB.Api.Repositories
             var maxDistanceMeters = maxDistanceKm * 1000.0;
             
             // 1. Define o ponto de busca (o driver espera (longitude, latitude))
-            var point = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
-                new GeoJson2DGeographicCoordinates(longitude, latitude)
+            // TIPOS QUALIFICADOS: Usando o namespace completo para resolver o CS0234
+            var point = new MongoDB.Driver.GeoJson.GeoJsonPoint<MongoDB.Driver.GeoJson.Core.GeoJson2DGeographicCoordinates>(
+                new MongoDB.Driver.GeoJson.Core.GeoJson2DGeographicCoordinates(longitude, latitude)
             );
 
             // 2. Cria a Pipeline GeoNear usando a sintaxe de agregação do driver
@@ -93,4 +94,4 @@ namespace projApiMongoDB.Api.Repositories
             return results;
         }
     }
-} 
+}
