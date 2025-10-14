@@ -1,0 +1,80 @@
+{
+  "info": {
+    "name": "projApiMongoDB - Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "projapimongodb-collection"
+  },
+  "item": [
+    {
+      "name": "Get all Infectados",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/infectado",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "infectado"]
+        }
+      }
+    },
+    {
+      "name": "Create Infectado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dataNascimento\": \"1990-03-01T00:00:00Z\",\n  \"sexo\": \"M\",\n  \"latitude\": -23.5630994,\n  \"longitude\": -46.6565712\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/infectado",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "infectado"]
+        }
+      }
+    },
+    {
+      "name": "Get Infectado by Id (example)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/infectado/{{id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "infectado", "{{id}}"]
+        }
+      }
+    },
+    {
+      "name": "Nearby search",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/infectado/nearby?lat=-23.5630994&lon=-46.6565712&maxKm=5&limit=20",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "infectado", "nearby"],
+          "query": [
+            { "key": "lat", "value": "-23.5630994" },
+            { "key": "lon", "value": "-46.6565712" },
+            { "key": "maxKm", "value": "5" },
+            { "key": "limit", "value": "20" }
+          ]
+        }
+      }
+    }
+  ]
+}
